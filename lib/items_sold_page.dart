@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'sell_item_page.dart';
 
 class ItemsSoldPage extends StatefulWidget {
   @override
@@ -18,11 +19,12 @@ class _ItemsSoldPageState extends State<ItemsSoldPage> {
 
   _loadSoldItems() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? jsonString = prefs.getString('sold_items');
-    if (jsonString != null) {
+    List<String>? jsonStringList = prefs.getStringList('sold_items');
+    if (jsonStringList != null) {
       setState(() {
-        List<dynamic> jsonList = json.decode(jsonString);
-        soldItems = jsonList.map((json) => Item.fromJson(json)).toList();
+        soldItems = jsonStringList
+            .map((jsonString) => Item.fromJson(json.decode(jsonString)))
+            .toList();
       });
     }
   }
@@ -84,8 +86,9 @@ class _ItemsSoldPageState extends State<ItemsSoldPage> {
 
   _saveSoldItems() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String jsonItems = json.encode(soldItems);
-    await prefs.setString('sold_items', jsonItems);
+    List<String> jsonItems =
+        soldItems.map((item) => json.encode(item.toJson())).toList();
+    await prefs.setStringList('sold_items', jsonItems);
   }
 
   @override

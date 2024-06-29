@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'items_sold_page.dart';
 
 class SellItemPage extends StatefulWidget {
   @override
@@ -9,6 +10,7 @@ class SellItemPage extends StatefulWidget {
 
 class _SellItemPageState extends State<SellItemPage> {
   List<Item> items = [];
+  List<Item> cart = []; // Temporary cart to store sold items
   String? _selectedItem;
   int _quantityToSell = 0;
 
@@ -31,14 +33,11 @@ class _SellItemPageState extends State<SellItemPage> {
 
   _sellItem() async {
     if (_selectedItem != null && _quantityToSell > 0) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      List<Item> updatedItems = [];
-      List<Item> soldItems = [];
+      Item? selectedItem = items.firstWhere(
+        (item) => item.name == _selectedItem,
+        orElse: () => Item(name: '', quantity: 0, price: 0.0, description: ''),
+      );
 
-      // Find the selected item
-      Item? selectedItem = items.firstWhere((item) => item.name == _selectedItem, orElse: () => Item(name: '', quantity: 0, price: 0.0, description: ''));
-
-      // Validate if item was found
       if (selectedItem.name.isEmpty) {
         return; // Handle case where selected item is not found
       }
@@ -51,7 +50,9 @@ class _SellItemPageState extends State<SellItemPage> {
           builder: (BuildContext context) {
             return AlertDialog(
               title: Text('Error'),
-              content: Text('There\'s only ${selectedItem.quantity} of ${selectedItem.name} in the inventory.'),
+              content: Text(
+                'There\'s only ${selectedItem.quantity} of ${selectedItem.name} in the inventory.',
+              ),
               actions: <Widget>[
                 TextButton(
                   onPressed: () {
@@ -66,35 +67,66 @@ class _SellItemPageState extends State<SellItemPage> {
         return;
       }
 
-      // Update items and sold items lists
-      for (Item item in items) {
-        if (item.name == _selectedItem) {
-          int remainingQuantity = item.quantity - _quantityToSell;
-          if (remainingQuantity > 0) {
-            updatedItems.add(Item(
-                name: item.name,
-                quantity: remainingQuantity,
-                price: item.price,
-                description: item.description));
-          }
-          String dateSold = '${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}';
-          soldItems.add(Item(
-              name: item.name,
-              quantity: _quantityToSell,
-              price: item.price,
-              description: item.description,
-              dateSold: dateSold));
-        } else {
-          updatedItems.add(item);
+      // Add item to cart
+      Item soldItem = Item(
+        name: selectedItem.name,
+        quantity: _quantityToSell,
+        price: selectedItem.price,
+        description: selectedItem.description,
+        dateSold:
+            '${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}',
+      );
+      setState(() {
+        cart.add(soldItem);
+        _selectedItem = null;
+        _quantityToSell = 0;
+      });
+    }
+  }
+
+  _navigateToCart() async {
+    // Navigate to CartPage and wait for result
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CartPage(cart: cart)),
+    );
+
+    // Handle result if needed, e.g., update inventory after transaction
+    if (result == true) {
+      _updateInventory(); // Update inventory after transaction
+    }
+  }
+
+  void _updateInventory() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<Item> updatedItems = List.from(items);
+
+    for (var cartItem in cart) {
+      Item? existingItem = updatedItems.firstWhere(
+        (item) => item.name == cartItem.name,
+        orElse: () => Item(name: '', quantity: 0, price: 0.0, description: ''),
+      );
+
+      if (existingItem.name.isNotEmpty) {
+        // Update quantity in the existing item
+        existingItem.quantity -= cartItem.quantity;
+        if (existingItem.quantity <= 0) {
+          // Remove items with zero or negative quantity
+          updatedItems.remove(existingItem);
         }
       }
-
-      // Save updated inventory and sold items
-      prefs.setString('items', json.encode(updatedItems.map((item) => item.toJson()).toList()));
-      prefs.setString('sold_items', json.encode(soldItems.map((item) => item.toJson()).toList()));
-
-      Navigator.pop(context);
     }
+
+    // Save updated inventory
+    prefs.setString(
+      'items',
+      json.encode(updatedItems.map((item) => item.toJson()).toList()),
+    );
+
+    // Update state with the new items list
+    setState(() {
+      items = updatedItems;
+    });
   }
 
   @override
@@ -113,7 +145,7 @@ class _SellItemPageState extends State<SellItemPage> {
               items: items.map((item) {
                 return DropdownMenuItem<String>(
                   value: item.name,
-                  child: Text(item.name ?? ''), // Handle null name
+                  child: Text(item.name), // Removed the null-aware operator
                 );
               }).toList(),
               onChanged: (value) {
@@ -130,9 +162,18 @@ class _SellItemPageState extends State<SellItemPage> {
               },
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _sellItem,
-              child: Text('Sell Item'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _sellItem,
+                  child: Text('Add to Cart'),
+                ),
+                ElevatedButton(
+                  onPressed: _navigateToCart,
+                  child: Text('Cart'),
+                ),
+              ],
             ),
           ],
         ),
@@ -148,7 +189,13 @@ class Item {
   String description;
   String? dateSold;
 
-  Item({required this.name, required this.quantity, required this.price, required this.description, this.dateSold});
+  Item({
+    required this.name,
+    required this.quantity,
+    required this.price,
+    required this.description,
+    this.dateSold,
+  });
 
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
@@ -167,4 +214,131 @@ class Item {
         'description': description,
         'dateSold': dateSold,
       };
+}
+
+class CartPage extends StatefulWidget {
+  final List<Item> cart;
+
+  const CartPage({Key? key, required this.cart}) : super(key: key);
+
+  @override
+  _CartPageState createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  double _moneyReceived = 0.0;
+  double _change = 0.0;
+
+  void _calculateChange() {
+    setState(() {
+      _change = _moneyReceived - _totalAmount();
+    });
+  }
+
+  double _totalAmount() {
+    double totalAmount = 0;
+    for (var item in widget.cart) {
+      totalAmount += item.quantity * item.price;
+    }
+    return totalAmount;
+  }
+
+  _finishTransaction() async {
+    try {
+      // Save sold items to SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Load existing sold items
+      List<String>? soldItemsJsonList = prefs.getStringList('sold_items');
+      List<Item> soldItems = soldItemsJsonList?.map((itemJson) {
+        Map<String, dynamic> itemMap = json.decode(itemJson);
+        return Item.fromJson(itemMap);
+      }).toList() ?? [];
+
+      // Add current cart items to sold items
+      soldItems.addAll(widget.cart);
+
+      // Convert sold items to JSON and save to SharedPreferences
+      List<String> updatedSoldItemsJsonList =
+          soldItems.map((item) => json.encode(item.toJson())).toList();
+      await prefs.setStringList('sold_items', updatedSoldItemsJsonList);
+
+      // Clear cart
+      setState(() {
+        widget.cart.clear();
+        _moneyReceived = 0.0;
+        _change = 0.0;
+      });
+
+      // Optionally navigate or show confirmation
+      Navigator.pop(context, true);
+    } catch (e) {
+      print('Error in _finishTransaction: $e');
+      // Handle error as needed
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Cart'),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Quantity')),
+                  DataColumn(label: Text('Price')),
+                  DataColumn(label: Text('Total Price')),
+                  DataColumn(label: Text('Date Sold')),
+                ],
+                rows: widget.cart
+                    .map((item) => DataRow(cells: [
+                          DataCell(Text(item.name)),
+                          DataCell(Text(item.quantity.toString())),
+                          DataCell(Text(item.price.toString())),
+                          DataCell(Text(
+                              (item.quantity * item.price).toStringAsFixed(2))),
+                          DataCell(Text(item.dateSold ?? '')),
+                        ]))
+                    .toList(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Money Received'),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                setState(() {
+                  _moneyReceived = double.tryParse(value) ?? 0.0;
+                  _calculateChange();
+                });
+              },
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Total Amount: \₱${_totalAmount().toStringAsFixed(2)}',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Change: \₱${_change.toStringAsFixed(2)}',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _finishTransaction,
+              child: Text('Finish Transaction'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

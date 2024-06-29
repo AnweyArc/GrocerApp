@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
 class InventoryPage extends StatefulWidget {
   @override
   _InventoryPageState createState() => _InventoryPageState();
@@ -56,6 +57,18 @@ class _InventoryPageState extends State<InventoryPage> {
             ),
     );
   }
+
+  // Update items list when inventory changes
+  void updateInventory() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString('items');
+    if (jsonString != null) {
+      setState(() {
+        List<dynamic> jsonList = json.decode(jsonString);
+        items = jsonList.map((json) => Item.fromJson(json)).toList();
+      });
+    }
+  }
 }
 
 class Item {
@@ -65,14 +78,20 @@ class Item {
   String description;
   String? dateSold;
 
-  Item({required this.name, required this.quantity, required this.price, required this.description, this.dateSold});
+  Item({
+    required this.name,
+    required this.quantity,
+    required this.price,
+    required this.description,
+    this.dateSold,
+  });
 
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
-      name: json['name'],
-      quantity: json['quantity'],
-      price: json['price'],
-      description: json['description'],
+      name: json['name'] ?? '',
+      quantity: json['quantity'] ?? 0,
+      price: json['price'] ?? 0.0,
+      description: json['description'] ?? '',
       dateSold: json['dateSold'],
     );
   }
