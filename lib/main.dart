@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
-import 'inventory_page.dart';
-import 'add_item_page.dart';
-import 'sell_item_page.dart';
-import 'items_sold_page.dart';
+import 'package:provider/provider.dart';
+import 'Inventory.dart';
+import 'SoldItems.dart';
+import 'CartScreen.dart';
+import 'AddItemScreen.dart';
+import 'SellItemScreen.dart';
+import 'ItemModel.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ItemModel(),
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Item Management',
+      title: 'Inventory and Sold Items',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -30,8 +38,8 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
 
   static List<Widget> _widgetOptions = <Widget>[
-    InventoryPage(),
-    ItemsSoldPage(),
+    Inventory(),
+    SoldItems(),
   ];
 
   void _onItemTapped(int index) {
@@ -44,9 +52,31 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Item Management'),
+        title: Text('Inventory and Sold Items'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AddItemScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.sell),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SellItemScreen()),
+              );
+            },
+          ),
+        ],
       ),
-      body: _widgetOptions.elementAt(_selectedIndex),
+      body: Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -55,39 +85,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.sell),
-            label: 'Items Sold',
+            label: 'Sold Items',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.amber[800],
         onTap: _onItemTapped,
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddItemPage()),
-              );
-            },
-            child: Icon(Icons.add),
-            tooltip: 'Add Item',
-          ),
-          SizedBox(height: 16),
-          FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SellItemPage()),
-              );
-            },
-            child: Icon(Icons.sell),
-            tooltip: 'Sell Item',
-          ),
-        ],
       ),
     );
   }
