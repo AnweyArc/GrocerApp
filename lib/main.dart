@@ -256,20 +256,24 @@ class _SellItemDialogState extends State<SellItemDialog> {
             final quantity = int.tryParse(_quantityController.text) ?? 0;
 
             if (itemName.isNotEmpty && quantity > 0) {
-              final item = Provider.of<ItemModel>(context, listen: false)
-                  .findItemByName(itemName);
+              final item = Provider.of<ItemModel>(context, listen: false).findItemByName(itemName);
 
-              if (item != null && quantity <= item.quantity) {
-                Provider.of<ItemModel>(context, listen: false)
-                    .addToCart(item, quantity);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('$quantity ${item.name} added to cart')),
-                );
-                _itemNameController.clear();
-                _quantityController.clear();
+              if (item != null) {
+                if (quantity <= item.quantity) {
+                  Provider.of<ItemModel>(context, listen: false).addToCart(item, quantity);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$quantity ${item.name} added to cart')),
+                  );
+                  _itemNameController.clear();
+                  _quantityController.clear();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Inventory quantity is not enough')),
+                  );
+                }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Item not found or quantity exceeds stock')),
+                  SnackBar(content: Text('No item exists')),
                 );
               }
             } else {
@@ -291,6 +295,7 @@ class _SellItemDialogState extends State<SellItemDialog> {
     );
   }
 }
+
 
 class CartScreen extends StatelessWidget {
   @override

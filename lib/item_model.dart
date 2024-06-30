@@ -138,7 +138,7 @@ class ItemModel with ChangeNotifier {
     _cartItems.clear();
     notifyListeners();
   }
-  
+
   void updateItem(Item oldItem, Item updatedItem) {
     final index = _inventoryItems.indexWhere((item) => item.name == oldItem.name);
     if (index != -1) {
@@ -146,6 +146,16 @@ class ItemModel with ChangeNotifier {
       _saveItems();
       notifyListeners();
     }
+  }
+  void deleteAllSoldItems() async {
+    soldItems.clear();
+    notifyListeners();
+    await _saveSoldItems(); // Save changes to shared preferences
+  }
+  Future<void> _saveSoldItems() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String jsonList = json.encode(soldItems);
+    prefs.setString('soldItems', jsonList);
   }
 
   void addItem(Item item) {
