@@ -297,7 +297,14 @@ class _SellItemDialogState extends State<SellItemDialog> {
 }
 
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
+  @override
+  _CartScreenState createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  double moneyReceived = 0; // Initialize money received
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -333,8 +340,21 @@ class CartScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text('Total Price: \₱${totalPrice.toStringAsFixed(2)}'),
+                    Text('Total Price: ₱${totalPrice.toStringAsFixed(2)}'),
+                    SizedBox(height: 10),
+                    TextFormField(
+                      decoration: InputDecoration(labelText: 'Money Received'),
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        setState(() {
+                          moneyReceived = double.tryParse(value) ?? 0;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    Text('Total Change: ₱${(moneyReceived - totalPrice).toStringAsFixed(2)}'),
                     SizedBox(height: 10),
                     ElevatedButton(
                       child: Text('Finish Transaction'),
@@ -368,6 +388,8 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
+
+
 
 
 extension on ItemModel {
