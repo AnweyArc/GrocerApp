@@ -150,6 +150,7 @@ class _AddItemDialogState extends State<AddItemDialog> {
         TextButton(
           child: Text('Cancel'),
           onPressed: () {
+            Provider.of<ItemModel>(context, listen: false).resetCart();
             Navigator.of(context).pop();
           },
         ),
@@ -194,8 +195,15 @@ class SellItemDialog extends StatefulWidget {
 }
 
 class _SellItemDialogState extends State<SellItemDialog> {
+  final _itemNameController = TextEditingController();
   final _quantityController = TextEditingController();
-  Item? _selectedItem;
+
+  @override
+  void dispose() {
+    _itemNameController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,20 +214,9 @@ class _SellItemDialogState extends State<SellItemDialog> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              DropdownButton<Item>(
-                hint: Text('Select Item'),
-                value: _selectedItem,
-                onChanged: (Item? newValue) {
-                  setState(() {
-                    _selectedItem = newValue;
-                  });
-                },
-                items: itemModel.inventoryItems.map((Item item) {
-                  return DropdownMenuItem<Item>(
-                    value: item,
-                    child: Text(item.name),
-                  );
-                }).toList(),
+              TextFormField(
+                controller: _itemNameController,
+                decoration: InputDecoration(labelText: 'Item Name'),
               ),
               TextFormField(
                 controller: _quantityController,
@@ -246,35 +243,43 @@ class _SellItemDialogState extends State<SellItemDialog> {
         ElevatedButton(
           child: Text('Add to Cart'),
           onPressed: () {
-            if (_selectedItem != null) {
-              final quantity = int.tryParse(_quantityController.text) ?? 0;
-              if (quantity > 0 && quantity <= _selectedItem!.quantity) {
-                final item = _selectedItem!;
-                Provider.of<ItemModel>(context, listen: false).addToCart(item, quantity);
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => CartScreen()),
+            final itemName = _itemNameController.text.trim();
+            final quantity = int.tryParse(_quantityController.text) ?? 0;
+
+            if (itemName.isNotEmpty && quantity > 0) {
+              final item = Provider.of<ItemModel>(context, listen: false)
+                  .findItemByName(itemName);
+
+              if (item != null && quantity <= item.quantity) {
+                Provider.of<ItemModel>(context, listen: false)
+                    .addToCart(item, quantity);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('$quantity ${item.name} added to cart')),
                 );
+                _itemNameController.clear();
+                _quantityController.clear();
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Invalid quantity')),
+                  SnackBar(content: Text('Item not found or quantity exceeds stock')),
                 );
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Please select an item')),
+                SnackBar(content: Text('Please enter valid item name and quantity')),
               );
             }
           },
         ),
+        TextButton(
+          child: Text('Go to Cart'),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => CartScreen()),
+            );
+          },
+        ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _quantityController.dispose();
-    super.dispose();
   }
 }
 
@@ -313,6 +318,7 @@ class CartScreen extends StatelessWidget {
                       child: Text('Finish Transaction'),
                       onPressed: () {
                         Provider.of<ItemModel>(context, listen: false).finishTransaction();
+                        Provider.of<ItemModel>(context, listen: false).resetCart();
                         Navigator.of(context).pop();
                       },
                     ),
@@ -326,3 +332,10 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
+
+extension on ItemModel {
+  Item? findItemByName(String name) {
+    return inventoryItems.firstWhere((item) => item.name == name);
+  }
+}
+

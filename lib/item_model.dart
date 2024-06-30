@@ -8,14 +8,19 @@ class Item {
   int quantity;
   String description;
 
-  Item({required this.name, required this.price, required this.quantity, required this.description});
+  Item({
+    required this.name,
+    required this.price,
+    required this.quantity,
+    required this.description,
+  });
 
   Map<String, dynamic> toJson() => {
-    'name': name,
-    'price': price,
-    'quantity': quantity,
-    'description': description,
-  };
+        'name': name,
+        'price': price,
+        'quantity': quantity,
+        'description': description,
+      };
 
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
@@ -40,15 +45,20 @@ class SoldItem extends Item {
     required this.month,
     required this.day,
     required this.year,
-  }) : super(name: name, price: price, quantity: quantity, description: description);
+  }) : super(
+          name: name,
+          price: price,
+          quantity: quantity,
+          description: description,
+        );
 
   @override
   Map<String, dynamic> toJson() => {
-    ...super.toJson(),
-    'month': month,
-    'day': day,
-    'year': year,
-  };
+        ...super.toJson(),
+        'month': month,
+        'day': day,
+        'year': year,
+      };
 
   factory SoldItem.fromJson(Map<String, dynamic> json) {
     return SoldItem(
@@ -93,6 +103,11 @@ class ItemModel with ChangeNotifier {
     notifyListeners();
   }
 
+  void resetCart() {
+    _cartItems.clear();
+    notifyListeners();
+  }
+
   void addItem(Item item) {
     _inventoryItems.add(item);
     _saveItems();
@@ -100,11 +115,21 @@ class ItemModel with ChangeNotifier {
   }
 
   void addToCart(Item item, int quantity) {
-    _cartItems.add(Item(name: item.name, price: item.price, quantity: quantity, description: item.description));
-    _inventoryItems.remove(item);
+    final existingCartItemIndex =
+        _cartItems.indexWhere((cartItem) => cartItem.name == item.name);
+    if (existingCartItemIndex >= 0) {
+      _cartItems[existingCartItemIndex].quantity += quantity;
+    } else {
+      _cartItems.add(Item(
+          name: item.name,
+          price: item.price,
+          quantity: quantity,
+          description: item.description));
+    }
+
     item.quantity -= quantity;
-    if (item.quantity > 0) {
-      _inventoryItems.add(item);
+    if (item.quantity <= 0) {
+      _inventoryItems.remove(item);
     }
     _saveItems();
     notifyListeners();
@@ -141,7 +166,8 @@ class ItemModel with ChangeNotifier {
 
   void _saveItems() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String inventoryData = jsonEncode(_inventoryItems.map((item) => item.toJson()).toList());
+    String inventoryData =
+        jsonEncode(_inventoryItems.map((item) => item.toJson()).toList());
     prefs.setString('inventoryItems', inventoryData);
 
     String soldData = jsonEncode(_soldItems.map((item) => item.toJson()).toList());
