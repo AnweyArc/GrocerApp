@@ -66,9 +66,11 @@ class SoldItem extends Item {
 class ItemModel with ChangeNotifier {
   List<Item> _inventoryItems = [];
   List<SoldItem> _soldItems = [];
+  List<Item> _cartItems = [];
 
   List<Item> get inventoryItems => _inventoryItems;
   List<SoldItem> get soldItems => _soldItems;
+  List<Item> get cartItems => _cartItems;
 
   ItemModel() {
     _loadItems();
@@ -97,10 +99,38 @@ class ItemModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void sellItem(SoldItem soldItem) {
-    _soldItems.add(soldItem);
+  void addToCart(Item item, int quantity) {
+    _cartItems.add(Item(name: item.name, price: item.price, quantity: quantity, description: item.description));
+    _inventoryItems.remove(item);
+    item.quantity -= quantity;
+    if (item.quantity > 0) {
+      _inventoryItems.add(item);
+    }
     _saveItems();
     notifyListeners();
+  }
+
+  void finishTransaction() {
+    final now = DateTime.now();
+    for (final item in _cartItems) {
+      final soldItem = SoldItem(
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        description: item.description,
+        month: now.month,
+        day: now.day,
+        year: now.year,
+      );
+      _soldItems.add(soldItem);
+    }
+    _cartItems.clear();
+    _saveItems();
+    notifyListeners();
+  }
+
+  double get totalCartPrice {
+    return _cartItems.fold(0, (total, item) => total + item.price * item.quantity);
   }
 
   void removeItem(int index) {

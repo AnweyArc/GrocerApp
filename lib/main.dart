@@ -63,7 +63,12 @@ class MyHomePage extends StatelessWidget {
             SizedBox(height: 10),
             FloatingActionButton(
               onPressed: () {
-                // Add your Sell Item logic here
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return SellItemDialog();
+                  },
+                );
               },
               tooltip: 'Sell Item',
               child: Icon(Icons.shopping_cart),
@@ -180,5 +185,144 @@ class _AddItemDialogState extends State<AddItemDialog> {
     _quantityController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+}
+
+class SellItemDialog extends StatefulWidget {
+  @override
+  _SellItemDialogState createState() => _SellItemDialogState();
+}
+
+class _SellItemDialogState extends State<SellItemDialog> {
+  final _quantityController = TextEditingController();
+  Item? _selectedItem;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Sell Item'),
+      content: Consumer<ItemModel>(
+        builder: (context, itemModel, child) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              DropdownButton<Item>(
+                hint: Text('Select Item'),
+                value: _selectedItem,
+                onChanged: (Item? newValue) {
+                  setState(() {
+                    _selectedItem = newValue;
+                  });
+                },
+                items: itemModel.inventoryItems.map((Item item) {
+                  return DropdownMenuItem<Item>(
+                    value: item,
+                    child: Text(item.name),
+                  );
+                }).toList(),
+              ),
+              TextFormField(
+                controller: _quantityController,
+                decoration: InputDecoration(labelText: 'Quantity'),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the quantity';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          );
+        },
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        ElevatedButton(
+          child: Text('Add to Cart'),
+          onPressed: () {
+            if (_selectedItem != null) {
+              final quantity = int.tryParse(_quantityController.text) ?? 0;
+              if (quantity > 0 && quantity <= _selectedItem!.quantity) {
+                final item = _selectedItem!;
+                Provider.of<ItemModel>(context, listen: false).addToCart(item, quantity);
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => CartScreen()),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Invalid quantity')),
+                );
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Please select an item')),
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
+}
+
+class CartScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Cart'),
+      ),
+      body: Consumer<ItemModel>(
+        builder: (context, itemModel, child) {
+          final cartItems = itemModel.cartItems;
+          final totalPrice = itemModel.totalCartPrice;
+          return Column(
+            children: <Widget>[
+              Expanded(
+                child: ListView.builder(
+                  itemCount: cartItems.length,
+                  itemBuilder: (context, index) {
+                    final item = cartItems[index];
+                    return ListTile(
+                      title: Text(item.name),
+                      subtitle: Text('Quantity: ${item.quantity}\nPrice: ${item.price * item.quantity}'),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: <Widget>[
+                    Text('Total Price: \$${totalPrice.toStringAsFixed(2)}'),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      child: Text('Finish Transaction'),
+                      onPressed: () {
+                        Provider.of<ItemModel>(context, listen: false).finishTransaction();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
