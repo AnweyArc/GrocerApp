@@ -35,7 +35,7 @@ class InventoryScreen extends StatelessWidget {
                   return ListTile(
                     title: Text(item.name),
                     subtitle: Text(
-                      'Price: ${item.price}\nQuantity: ${item.quantity}\nDescription: ${item.description}',
+                      'Price: ₱${item.price}\nQuantity: ${item.quantity}\nDescription: ${item.description}',
                     ),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
