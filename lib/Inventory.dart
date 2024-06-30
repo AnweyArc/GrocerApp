@@ -22,6 +22,8 @@ class InventoryScreen extends StatelessWidget {
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
+                      int deleteQuantity = 1; // Default delete quantity
+
                       return AlertDialog(
                         title: Text('Delete Item'),
                         content: Column(
@@ -33,19 +35,8 @@ class InventoryScreen extends StatelessWidget {
                             TextFormField(
                               decoration: InputDecoration(labelText: 'Quantity to Delete'),
                               keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter a valid quantity';
-                                }
-                                final int quantity = int.tryParse(value) ?? 0;
-                                if (quantity <= 0 || quantity > item.quantity) {
-                                  return 'Invalid quantity';
-                                }
-                                return null;
-                              },
-                              onSaved: (value) {
-                                final int quantity = int.tryParse(value!) ?? 0;
-                                itemModel.removeItem(index, quantity: quantity);
+                              onChanged: (value) {
+                                deleteQuantity = int.tryParse(value) ?? 1;
                               },
                             ),
                           ],
@@ -60,11 +51,10 @@ class InventoryScreen extends StatelessWidget {
                           ElevatedButton(
                             child: Text('Delete'),
                             onPressed: () {
-                              final form = Form.of(context);
-                              if (form?.validate() ?? false) {
-                                form?.save();
-                                Navigator.of(context).pop();
+                              if (deleteQuantity > 0 && deleteQuantity <= item.quantity) {
+                                itemModel.removeItem(index, quantity: deleteQuantity);
                               }
+                              Navigator.of(context).pop();
                             },
                           ),
                         ],
@@ -88,6 +78,7 @@ class InventoryScreen extends StatelessWidget {
     );
   }
 }
+
 
 class EditItemDialog extends StatefulWidget {
   final Item item;
