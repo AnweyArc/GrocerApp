@@ -140,10 +140,26 @@ class ItemModel with ChangeNotifier {
   }
 
   void addItem(Item item) {
-    _inventoryItems.add(item);
-    _saveItems();
-    notifyListeners();
+  // Check if the item already exists in inventory
+  bool found = false;
+  for (int i = 0; i < _inventoryItems.length; i++) {
+    if (_inventoryItems[i].name == item.name) {
+      // Item found, add the quantity to existing item
+      _inventoryItems[i].quantity += item.quantity;
+      found = true;
+      break;
+    }
   }
+
+  // If item was not found, add it to inventory
+  if (!found) {
+    _inventoryItems.add(item);
+  }
+
+  _saveItems();
+  notifyListeners();
+}
+
 
   void addToCart(Item item, int quantity) {
     final existingCartItemIndex = _cartItems.indexWhere((cartItem) => cartItem.name == item.name);
@@ -188,10 +204,17 @@ class ItemModel with ChangeNotifier {
     return _cartItems.fold(0, (total, item) => total + item.price * item.quantity);
   }
 
-  void removeItem(int index) {
-    _inventoryItems.removeAt(index);
-    _saveItems();
-    notifyListeners();
+  void removeItem(int index, {int quantity = 1}) {
+    if (index >= 0 && index < _inventoryItems.length) {
+      final item = _inventoryItems[index];
+      if (quantity >= item.quantity) {
+        _inventoryItems.removeAt(index);
+      } else {
+        item.quantity -= quantity;
+      }
+      _saveItems(); // Assuming _saveItems handles saving to SharedPreferences
+      notifyListeners(); // Notify listeners after making changes
+    }
   }
 
   void _saveItems() async {
