@@ -150,7 +150,6 @@ class _AddItemDialogState extends State<AddItemDialog> {
         TextButton(
           child: Text('Cancel'),
           onPressed: () {
-            Provider.of<ItemModel>(context, listen: false).resetCart();
             Navigator.of(context).pop();
           },
         ),
@@ -238,6 +237,7 @@ class _SellItemDialogState extends State<SellItemDialog> {
           child: Text('Cancel'),
           onPressed: () {
             Navigator.of(context).pop();
+            Provider.of<ItemModel>(context, listen: false).resetCart();
           },
         ),
         ElevatedButton(
