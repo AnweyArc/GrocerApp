@@ -23,11 +23,15 @@ class InventoryScreen extends StatelessWidget {
         Expanded(
           child: Consumer<ItemModel>(
             builder: (context, itemModel, child) {
-              final filteredItems = itemModel.filteredItems;
+              // Get either filtered items or all items if no search query
+              final itemsToShow = itemModel.filteredItems.isNotEmpty
+                  ? itemModel.filteredItems
+                  : itemModel.inventoryItems;
+
               return ListView.builder(
-                itemCount: filteredItems.length,
+                itemCount: itemsToShow.length,
                 itemBuilder: (context, index) {
-                  final item = filteredItems[index];
+                  final item = itemsToShow[index];
                   return ListTile(
                     title: Text(item.name),
                     subtitle: Text(
@@ -98,8 +102,6 @@ class InventoryScreen extends StatelessWidget {
     );
   }
 }
-
-
 
 class EditItemDialog extends StatefulWidget {
   final Item item;
