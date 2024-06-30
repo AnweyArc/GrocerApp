@@ -5,79 +5,100 @@ import 'item_model.dart';
 class InventoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<ItemModel>(
-      builder: (context, itemModel, child) {
-        return ListView.builder(
-          itemCount: itemModel.inventoryItems.length,
-          itemBuilder: (context, index) {
-            final item = itemModel.inventoryItems[index];
-            return ListTile(
-              title: Text(item.name),
-              subtitle: Text(
-                'Price: ${item.price}\nQuantity: ${item.quantity}\nDescription: ${item.description}',
-              ),
-              trailing: IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      int deleteQuantity = 1; // Default delete quantity
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search by item name...',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (query) {
+              Provider.of<ItemModel>(context, listen: false).filterItems(query);
+            },
+          ),
+        ),
+        Expanded(
+          child: Consumer<ItemModel>(
+            builder: (context, itemModel, child) {
+              final filteredItems = itemModel.filteredItems;
+              return ListView.builder(
+                itemCount: filteredItems.length,
+                itemBuilder: (context, index) {
+                  final item = filteredItems[index];
+                  return ListTile(
+                    title: Text(item.name),
+                    subtitle: Text(
+                      'Price: ${item.price}\nQuantity: ${item.quantity}\nDescription: ${item.description}',
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            int deleteQuantity = 1; // Default delete quantity
 
-                      return AlertDialog(
-                        title: Text('Delete Item'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text('Are you sure you want to delete ${item.name}?'),
-                            SizedBox(height: 10),
-                            TextFormField(
-                              decoration: InputDecoration(labelText: 'Quantity to Delete'),
-                              keyboardType: TextInputType.number,
-                              onChanged: (value) {
-                                deleteQuantity = int.tryParse(value) ?? 1;
-                              },
-                            ),
-                          ],
-                        ),
-                        actions: <Widget>[
-                          TextButton(
-                            child: Text('Cancel'),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                          ElevatedButton(
-                            child: Text('Delete'),
-                            onPressed: () {
-                              if (deleteQuantity > 0 && deleteQuantity <= item.quantity) {
-                                itemModel.removeItem(index, quantity: deleteQuantity);
-                              }
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
+                            return AlertDialog(
+                              title: Text('Delete Item'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text('Are you sure you want to delete ${item.name}?'),
+                                  SizedBox(height: 10),
+                                  TextFormField(
+                                    decoration: InputDecoration(labelText: 'Quantity to Delete'),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      deleteQuantity = int.tryParse(value) ?? 1;
+                                    },
+                                  ),
+                                ],
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: Text('Cancel'),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                                ElevatedButton(
+                                  child: Text('Delete'),
+                                  onPressed: () {
+                                    if (deleteQuantity > 0 && deleteQuantity <= item.quantity) {
+                                      itemModel.removeItem(index, quantity: deleteQuantity);
+                                    }
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return EditItemDialog(item: item);
+                        },
                       );
                     },
                   );
                 },
-              ),
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return EditItemDialog(item: item);
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
+
 
 
 class EditItemDialog extends StatefulWidget {

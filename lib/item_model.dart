@@ -77,6 +77,8 @@ class ItemModel with ChangeNotifier {
   List<Item> _inventoryItems = [];
   List<SoldItem> _soldItems = [];
   List<Item> _cartItems = [];
+  List<Item> filteredItems = []; // Filtered items based on search query
+
 
   List<Item> get inventoryItems => _inventoryItems;
   List<SoldItem> get soldItems => _soldItems;
@@ -134,6 +136,17 @@ class ItemModel with ChangeNotifier {
     }
   }
 
+  void filterItems(String query) {
+    if (query.isNotEmpty) {
+      filteredItems = inventoryItems
+          .where((item) => item.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    } else {
+      filteredItems = List.from(inventoryItems);
+    }
+    notifyListeners();
+  }
+
   void resetCart() {
     _cartItems.clear();
     notifyListeners();
@@ -157,6 +170,7 @@ class ItemModel with ChangeNotifier {
     String jsonList = json.encode(soldItems);
     prefs.setString('soldItems', jsonList);
   }
+
 
   void addItem(Item item) {
   // Check if the item already exists in inventory
