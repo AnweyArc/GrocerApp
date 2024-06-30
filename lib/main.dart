@@ -2,96 +2,183 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'Inventory.dart';
 import 'SoldItems.dart';
-import 'CartScreen.dart';
-import 'AddItemScreen.dart';
-import 'SellItemScreen.dart';
-import 'ItemModel.dart';
+import 'item_model.dart';
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ItemModel(),
-      child: MyApp(),
-    ),
-  );
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Inventory and Sold Items',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return ChangeNotifierProvider(
+      create: (context) => ItemModel(),
+      child: MaterialApp(
+        title: 'Inventory App',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: MyHomePage(),
       ),
-      home: MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends StatelessWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Inventory Management'),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'Inventory'),
+              Tab(text: 'Sold Items'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            InventoryScreen(),
+            SoldItemsScreen(),
+          ],
+        ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AddItemDialog();
+                  },
+                );
+              },
+              tooltip: 'Add Item',
+              child: Icon(Icons.add),
+            ),
+            SizedBox(height: 10),
+            FloatingActionButton(
+              onPressed: () {
+                // Add your Sell Item logic here
+              },
+              tooltip: 'Sell Item',
+              child: Icon(Icons.shopping_cart),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _selectedIndex = 0;
+class AddItemDialog extends StatefulWidget {
+  @override
+  _AddItemDialogState createState() => _AddItemDialogState();
+}
 
-  static List<Widget> _widgetOptions = <Widget>[
-    Inventory(),
-    SoldItems(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+class _AddItemDialogState extends State<AddItemDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Inventory and Sold Items'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddItemScreen()),
+    return AlertDialog(
+      title: Text('Add Item'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Name'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter the item name';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _priceController,
+              decoration: InputDecoration(labelText: 'Price'),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter the price';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _quantityController,
+              decoration: InputDecoration(labelText: 'Quantity'),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter the quantity';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: InputDecoration(labelText: 'Description'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a description';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        ElevatedButton(
+          child: Text('Add'),
+          onPressed: () {
+            if (_formKey.currentState?.validate() ?? false) {
+              final name = _nameController.text;
+              final price = double.tryParse(_priceController.text) ?? 0;
+              final quantity = int.tryParse(_quantityController.text) ?? 0;
+              final description = _descriptionController.text;
+
+              final newItem = Item(
+                name: name,
+                price: price,
+                quantity: quantity,
+                description: description,
               );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.sell),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SellItemScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory),
-            label: 'Inventory',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sell),
-            label: 'Sold Items',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
-      ),
+
+              Provider.of<ItemModel>(context, listen: false).addItem(newItem);
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
     );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    _quantityController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 }
