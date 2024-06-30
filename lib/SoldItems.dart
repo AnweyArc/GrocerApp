@@ -33,7 +33,7 @@ class SoldItemsScreen extends StatelessWidget {
                   return ListTile(
                     title: Text(item.name),
                     subtitle: Text(
-                      'Total Price: $totalPrice\nQuantity: ${item.quantity}\nDescription: ${item.description}\nSold On: ${item.month}/${item.day}/${item.year}',
+                      'Total Price: ₱$totalPrice\nQuantity: ${item.quantity}\nDescription: ${item.description}\nSold On: ${item.month}/${item.day}/${item.year}',
                     ),
                   );
                 },

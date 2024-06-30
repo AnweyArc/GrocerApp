@@ -318,7 +318,7 @@ class CartScreen extends StatelessWidget {
                     final item = cartItems[index];
                     return ListTile(
                       title: Text(item.name),
-                      subtitle: Text('Quantity: ${item.quantity}\nPrice: ${item.price * item.quantity}'),
+                      subtitle: Text('Quantity: ${item.quantity}\nPrice: ₱${item.price * item.quantity}'),
                       trailing: IconButton(
                         icon: Icon(Icons.delete),
                         onPressed: () {
@@ -334,7 +334,7 @@ class CartScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: <Widget>[
-                    Text('Total Price: \$${totalPrice.toStringAsFixed(2)}'),
+                    Text('Total Price: \₱${totalPrice.toStringAsFixed(2)}'),
                     SizedBox(height: 10),
                     ElevatedButton(
                       child: Text('Finish Transaction'),
