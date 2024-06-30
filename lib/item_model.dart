@@ -138,6 +138,15 @@ class ItemModel with ChangeNotifier {
     _cartItems.clear();
     notifyListeners();
   }
+  
+  void updateItem(Item oldItem, Item updatedItem) {
+    final index = _inventoryItems.indexWhere((item) => item.name == oldItem.name);
+    if (index != -1) {
+      _inventoryItems[index] = updatedItem;
+      _saveItems();
+      notifyListeners();
+    }
+  }
 
   void addItem(Item item) {
   // Check if the item already exists in inventory
