@@ -103,6 +103,37 @@ class ItemModel with ChangeNotifier {
     notifyListeners();
   }
 
+  void removeFromCart(Item item) {
+    // Find the item in the cart
+    final cartItem = _cartItems.firstWhere((cartItem) => cartItem.name == item.name);
+
+    if (cartItem != null) {
+      // Decrease the quantity in cart
+      cartItem.quantity--;
+
+      // If cart item quantity drops to zero, remove it from cart
+      if (cartItem.quantity <= 0) {
+        _cartItems.remove(cartItem);
+      }
+
+      // Increase the quantity back in inventory
+      final inventoryItem = _inventoryItems.firstWhere((inventoryItem) => inventoryItem.name == item.name);
+      if (inventoryItem != null) {
+        inventoryItem.quantity++;
+      } else {
+        // If the item was not found in inventory (though it should be), add it back
+        _inventoryItems.add(Item(
+          name: item.name,
+          price: item.price,
+          quantity: 1, // Default to 1 since cart should not have less than 1 quantity
+          description: item.description,
+        ));
+      }
+
+      notifyListeners();
+    }
+  }
+
   void resetCart() {
     _cartItems.clear();
     notifyListeners();
@@ -115,8 +146,7 @@ class ItemModel with ChangeNotifier {
   }
 
   void addToCart(Item item, int quantity) {
-    final existingCartItemIndex =
-        _cartItems.indexWhere((cartItem) => cartItem.name == item.name);
+    final existingCartItemIndex = _cartItems.indexWhere((cartItem) => cartItem.name == item.name);
     if (existingCartItemIndex >= 0) {
       _cartItems[existingCartItemIndex].quantity += quantity;
     } else {
@@ -172,5 +202,26 @@ class ItemModel with ChangeNotifier {
 
     String soldData = jsonEncode(_soldItems.map((item) => item.toJson()).toList());
     prefs.setString('soldItems', soldData);
+  }
+
+  void returnToInventory(Item item) {
+    // Increase the quantity back in inventory
+    final inventoryItem = _inventoryItems.firstWhere((inventoryItem) => inventoryItem.name == item.name);
+    if (inventoryItem != null) {
+      inventoryItem.quantity += item.quantity;
+    } else {
+      // If the item was not found in inventory (though it should be), add it back
+      _inventoryItems.add(Item(
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        description: item.description,
+      ));
+    }
+
+    // Clear the item from cart
+    _cartItems.removeWhere((cartItem) => cartItem.name == item.name);
+
+    notifyListeners();
   }
 }

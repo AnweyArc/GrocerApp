@@ -236,8 +236,17 @@ class _SellItemDialogState extends State<SellItemDialog> {
         TextButton(
           child: Text('Cancel'),
           onPressed: () {
+            // Check if there are items in the cart
+            if (Provider.of<ItemModel>(context, listen: false).cartItems.isNotEmpty) {
+              // Return items from cart to inventory
+              for (var item in Provider.of<ItemModel>(context, listen: false).cartItems) {
+                Provider.of<ItemModel>(context, listen: false).returnToInventory(item);
+              }
+              // Reset the cart
+              Provider.of<ItemModel>(context, listen: false).resetCart();
+            }
+            // Close the dialog
             Navigator.of(context).pop();
-            Provider.of<ItemModel>(context, listen: false).resetCart();
           },
         ),
         ElevatedButton(
@@ -294,6 +303,7 @@ class CartScreen extends StatelessWidget {
         builder: (context, itemModel, child) {
           final cartItems = itemModel.cartItems;
           final totalPrice = itemModel.totalCartPrice;
+
           return Column(
             children: <Widget>[
               Expanded(
@@ -304,6 +314,13 @@ class CartScreen extends StatelessWidget {
                     return ListTile(
                       title: Text(item.name),
                       subtitle: Text('Quantity: ${item.quantity}\nPrice: ${item.price * item.quantity}'),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          // Remove item from cart
+                          Provider.of<ItemModel>(context, listen: false).removeFromCart(item);
+                        },
+                      ),
                     );
                   },
                 ),
@@ -322,6 +339,20 @@ class CartScreen extends StatelessWidget {
                         Navigator.of(context).pop();
                       },
                     ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      child: Text('Cancel Transaction'),
+                      onPressed: () {
+                        // Return items from cart to inventory
+                        for (var item in cartItems) {
+                          Provider.of<ItemModel>(context, listen: false).returnToInventory(item);
+                        }
+                        // Reset the cart
+                        Provider.of<ItemModel>(context, listen: false).resetCart();
+                        // Close the screen
+                        Navigator.of(context).pop();
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -332,6 +363,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
+
 
 extension on ItemModel {
   Item? findItemByName(String name) {
