@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'Inventory.dart';
 import 'SoldItems.dart';
 import 'item_model.dart';
+import 'settings_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -11,14 +12,23 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ItemModel(),
-      child: MaterialApp(
-        title: 'Inventory App',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: MyHomePage(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ItemModel()),
+        ChangeNotifierProvider(create: (context) => ThemeModel()),
+      ],
+      child: Consumer<ThemeModel>(
+        builder: (context, themeModel, child) {
+          return MaterialApp(
+            title: 'Inventory App',
+            theme: themeModel.isDarkMode ? ThemeData.dark() : ThemeData.light(),
+            home: Builder(
+              builder: (context) {
+                return MyHomePage();
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -32,6 +42,16 @@ class MyHomePage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text('Inventory Management'),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => SettingsScreen()),
+                );
+              },
+            ),
+          ],
           bottom: TabBar(
             tabs: [
               Tab(text: 'Inventory'),
@@ -296,7 +316,6 @@ class _SellItemDialogState extends State<SellItemDialog> {
   }
 }
 
-
 class CartScreen extends StatefulWidget {
   @override
   _CartScreenState createState() => _CartScreenState();
@@ -389,12 +408,17 @@ class _CartScreenState extends State<CartScreen> {
   }
 }
 
-
-
-
 extension on ItemModel {
   Item? findItemByName(String name) {
     return inventoryItems.firstWhere((item) => item.name == name);
   }
 }
 
+class ThemeModel extends ChangeNotifier {
+  bool isDarkMode = false;
+
+  void toggleTheme() {
+    isDarkMode = !isDarkMode;
+    notifyListeners();
+  }
+}
